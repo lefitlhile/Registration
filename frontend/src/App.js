@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import './App.css';
 
@@ -17,8 +16,12 @@ function Header() {
 }
 
 const GoogleAuthButton = () => {
+  const handleGoogleAuth = () => {
+    window.location.href = 'http://localhost:5000/auth/google'; // Redirect to Google OAuth
+  };
+
   return (
-    <button style={googleStyles.button}>
+    <button style={googleStyles.button} onClick={handleGoogleAuth}>
       <img 
         src={require('./img/Gicon.png')} 
         alt="Google icon" 
@@ -124,7 +127,6 @@ function SignUpForm() {
       const data = await response.json();
       if (response.ok) {
         console.log('Registration successful:', data);
-      
       } else {
         setError(data.errors.map(err => err.msg).join(', '));
       }

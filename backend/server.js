@@ -5,6 +5,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2');
 const { body, validationResult } = require('express-validator');
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
 require('dotenv').config();
 
 const app = express();
@@ -12,7 +14,9 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use(passport.initialize());
 
+// Database connection
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -28,6 +32,7 @@ db.connect(err => {
     console.log('MySQL Connected');
 });
 
+// Registration endpoint
 app.post('/api/register', 
     body('name').notEmpty().withMessage('Name is required'),
     body('email').isEmail().withMessage('Enter a valid email address'),
@@ -52,6 +57,54 @@ app.post('/api/register',
         } catch (error) {
             res.status(500).send({ message: 'Server error' });
         }
+    }
+);
+
+// Google OAuth setup
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: '/auth/google/callback'
+}, async (accessToken, refreshToken, profile, done) => {
+    try {
+        // Check if the user already exists in the database
+        const query = 'SELECT * FROM users WHERE google_id = ?';
+        db.query(query, [profile.id], async (err, results) => {
+            if (err) return done(err);
+            if (results.length > 0) {
+                // User exists, return the user
+                return done(null, results[0]);
+            } else {
+                // Create a new user in the database
+                const newUser = {
+                    name: profile.displayName,
+                    email: profile.emails[0].value,
+                    google_id: profile.id
+                };
+                const insertQuery = 'INSERT INTO users (name, email, google_id) VALUES (?, ?, ?)';
+                db.query(insertQuery, [newUser.name, newUser.email, newUser.google_id], (err, result) => {
+                    if (err) return done(err);
+                    newUser.id = result.insertId; // Set the ID for the new user
+                    return done(null, newUser);
+                });
+            }
+        });
+    } catch (error) {
+        return done(error);
+    }
+}));
+
+// Routes for Google OAuth
+app.get('/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+app.get('/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/login' }),
+    (req, res) => {
+        // Successful authentication, generate a JWT token and send it
+        const token = jwt.sign({ id: req.user.id, name: req.user.name, email: req.user.email }, process.env.JWT_SECRET);
+        res.redirect(`http://localhost:${PORT}/?token=${token}`); // Redirect with token
     }
 );
 
