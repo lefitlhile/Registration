@@ -16,7 +16,7 @@ app.use(bodyParser.json());
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    password: 'Jesus@1989', // replace with your actual password
+    password: 'Jesus@1989', 
     database: 'regtable'
 });
 
