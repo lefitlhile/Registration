@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import './App.css';
 
@@ -123,7 +124,7 @@ function SignUpForm() {
       const data = await response.json();
       if (response.ok) {
         console.log('Registration successful:', data);
-        // Optionally, redirect or show success message
+      
       } else {
         setError(data.errors.map(err => err.msg).join(', '));
       }
