@@ -17,7 +17,7 @@ function Header() {
 
 const GoogleAuthButton = () => {
   const handleGoogleAuth = () => {
-    window.location.href = 'http://localhost:5000/auth/google'; // Redirect to Google OAuth
+    window.location.href = 'http://localhost:5000/auth/google'; 
   };
 
   return (
